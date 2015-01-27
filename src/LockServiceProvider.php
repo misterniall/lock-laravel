@@ -6,7 +6,8 @@ use BeatSwitch\Lock\Drivers\ArrayDriver;
 use BeatSwitch\Lock\Manager;
 use Illuminate\Support\ServiceProvider;
 
-class LockServiceProvider extends ServiceProvider {
+class LockServiceProvider extends ServiceProvider
+{
 
     /**
      * Indicates if loading of the provider is deferred.
