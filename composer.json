@@ -39,5 +39,6 @@
         "psr-4": {
             "tests\\BeatSwitch\\Lock\\Integrations\\Laravel\\": "tests/"
         }
-    }
+    },
+    "minimum-stability": "dev"
 }
