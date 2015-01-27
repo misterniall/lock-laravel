@@ -39,9 +39,7 @@ class LockServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(
-            'lock-laravel', __DIR__ . '/config/config.php'
-        );
+        $this->mergeConfigFrom('lock-laravel', __DIR__ . '/config/config.php');
 
         $this->publishes(
             [
@@ -50,19 +48,24 @@ class LockServiceProvider extends ServiceProvider
         );
 
         $this->bootstrapManager();
-        $this->bootstrapAuthedUserLock();
+        $this->bootstrapAuthorizedUserLock();
     }
 
     /**
      * This method will bootstrap the lock manager instance
+     *
+     * @return mixed
      */
     protected function bootstrapManager()
     {
         $driver = $this->getDriver();
 
-        $this->app->bindShared('lock.manager', function () use ($driver) {
-            return new Manager($driver);
-        });
+        $this->app->bindShared(
+            'lock.manager',
+            function () use ($driver) {
+                return new Manager($driver);
+            }
+        );
 
         $this->app->alias('lock.manager', 'BeatSwitch\Lock\Manager');
     }
@@ -82,10 +85,11 @@ class LockServiceProvider extends ServiceProvider
         if ($driver === 'database') {
             $table = $this->app['config']->get('lock-laravel.table');
 
+            $migrationFile = '2014_12_08_120000_lock_create_permissions_table.php';
+
             $this->publishes(
                 [
-                    __DIR__ . '/migrations/2014_12_08_120000_lock_create_permissions_table.php' => base_path
-                    ('database/migrations/2014_12_08_120000_lock_create_permissions_table.php')
+                    __DIR__ . '/migrations/'. $migrationFile => base_path('database/migrations/'. $migrationFile)
                 ]
             );
 
@@ -97,28 +101,33 @@ class LockServiceProvider extends ServiceProvider
     }
 
     /**
-     * This will bootstrap the lock instance for the authed user
+     * This will bootstrap the lock instance for the authorized user
+     *
+     * @return mixed
      */
-    protected function bootstrapAuthedUserLock()
+    protected function bootstrapAuthorizedUserLock()
     {
-        $this->app->bindShared('lock', function ($app) {
-            // If the user is logged in, we'll make the user lock aware and register its lock instance.
-            if ($app['auth']->check()) {
-                // Get the lock instance for the authed user.
-                $lock = $app['lock.manager']->caller($app['auth']->user());
+        $this->app->bindShared(
+            'lock',
+            function ($app) {
+                // If the user is logged in, we'll make the user lock aware and register its lock instance.
+                if ($app['auth']->check()) {
+                    // Get the lock instance for the authorized user.
+                    $lock = $app['lock.manager']->caller($app['auth']->user());
 
-                // Enable the LockAware trait on the user.
-                $app['auth']->user()->setLock($lock);
+                    // Enable the LockAware trait on the user.
+                    $app['auth']->user()->setLock($lock);
 
-                return $lock;
+                    return $lock;
+                }
+
+                // Get the caller type for the user caller.
+                $userCallerType = $app['config']->get('lock-laravel.user_caller_type');
+
+                // Bootstrap a SimpleCaller object which has the "guest" role.
+                return $app['lock.manager']->caller(new SimpleCaller($userCallerType, 0, ['guest']));
             }
-
-            // Get the caller type for the user caller.
-            $userCallerType = $app['config']->get('lock-laravel.user_caller_type');
-
-            // Bootstrap a SimpleCaller object which has the "guest" role.
-            return $app['lock.manager']->caller(new SimpleCaller($userCallerType, 0, ['guest']));
-        });
+        );
 
         $this->app->alias('lock', 'BeatSwitch\Lock\Lock');
     }
