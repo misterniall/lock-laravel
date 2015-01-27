@@ -6,8 +6,8 @@ use BeatSwitch\Lock\Drivers\ArrayDriver;
 use BeatSwitch\Lock\Manager;
 use Illuminate\Support\ServiceProvider;
 
-class LockServiceProvider extends ServiceProvider
-{
+class LockServiceProvider extends ServiceProvider {
+
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -25,7 +25,7 @@ class LockServiceProvider extends ServiceProvider
         // all of our permissions get set beforehand.
 
         // Get the permissions callback from the config file.
-        $callback = $this->app['config']->get('lock-laravel::permissions');
+        $callback = $this->app['config']->get('lock-laravel.permissions');
 
         // Add the permissions which were set in the config file.
         call_user_func($callback, $this->app['lock.manager'], $this->app['lock']);
@@ -38,7 +38,15 @@ class LockServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->package('beatswitch/lock-laravel', 'lock-laravel', __DIR__);
+        $this->mergeConfigFrom(
+            'lock-laravel', __DIR__ . '/config/config.php'
+        );
+
+        $this->publishes(
+            [
+                __DIR__ . '/config/config.php' => config_path('lock-laravel.php'),
+            ]
+        );
 
         $this->bootstrapManager();
         $this->bootstrapAuthedUserLock();
@@ -66,12 +74,19 @@ class LockServiceProvider extends ServiceProvider
     protected function getDriver()
     {
         // Get the configuration options for Lock.
-        $driver = $this->app['config']->get('lock-laravel::driver');
+        $driver = $this->app['config']->get('lock-laravel.driver');
 
         // If the user choose the persistent database driver, bootstrap
         // the database driver with the default database connection.
         if ($driver === 'database') {
-            $table = $this->app['config']->get('lock-laravel::table');
+            $table = $this->app['config']->get('lock-laravel.table');
+
+            $this->publishes(
+                [
+                    __DIR__ . '/migrations/2014_12_08_120000_lock_create_permissions_table.php' => base_path
+                    ('database/migrations/2014_12_08_120000_lock_create_permissions_table.php')
+                ]
+            );
 
             return new DatabaseDriver($this->app['db']->connection(), $table);
         }
@@ -98,7 +113,7 @@ class LockServiceProvider extends ServiceProvider
             }
 
             // Get the caller type for the user caller.
-            $userCallerType = $app['config']->get('lock-laravel::user_caller_type');
+            $userCallerType = $app['config']->get('lock-laravel.user_caller_type');
 
             // Bootstrap a SimpleCaller object which has the "guest" role.
             return $app['lock.manager']->caller(new SimpleCaller($userCallerType, 0, ['guest']));

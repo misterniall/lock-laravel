@@ -46,17 +46,19 @@ Register the facades in your `app.php` config file.
 'LockManager' => 'BeatSwitch\Lock\Integrations\Laravel\Facades\LockManager',
 ```
 
-Publish the configuration file and edit the configuration options at `app/config/packages/beatswitch/lock-laravel/config.php`.
+Publish the configuration file and edit the configuration options at `app/config/lock-laravel.php`.
 
 ```bash
-$ php artisan config:publish beatswitch/lock-laravel
+$ php artisan vendor:publish
 ```
 
 If you're using the database driver you should run the package's migrations. This will create the database table where all permissions will be stored.
 
 ```bash
-$ php artisan migrate --package="beatswitch/lock-laravel"
+$ php artisan vendor:publish
+$ php artisan migrate
 ```
+> Run `php artisan vendor:publish` after you have changed the value in your local laravel-lock.php config.
 
 Make sure to set the `BeatSwitch\Lock\LockAware` trait on your `User` model. That way your authed user will receive a Lock instance of itself so you can call permissions directly from your user object. If no user is authed, a `SimpleCaller` object will be bootstrapped which has the `guest` role. That way you can still use the `Lock` facade.
 
