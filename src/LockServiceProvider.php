@@ -39,7 +39,7 @@ class LockServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom('lock-laravel', __DIR__ . '/config/config.php');
+        $this->mergeConfigFrom(__DIR__ . '/config/config.php', 'lock-laravel');
 
         $this->publishes(
             [
